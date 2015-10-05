@@ -1,0 +1,17 @@
+{
+  "name": "letdown",
+  "version": "0.1.0",
+  "description": "it's disappointing",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "otc"
+  ],
+  "author": "Otter the Cat",
+  "license": "MIT",
+  "dependencies": {
+    "markdown-it": "^4.4.0"
+  }
+}
