@@ -33,6 +33,7 @@ fs.readdir(filePath, function(err, files){
 
         console.log('file created');
         console.log('inserting into mongo...');
+        /*
         cp.exec(cmdString, function(err){
           if(err){
             console.log("Error inserting into DB: ", err);
@@ -40,6 +41,7 @@ fs.readdir(filePath, function(err, files){
           }
           console.log('insertion complete');
         });
+        */
       });
     });
   });
