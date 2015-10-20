@@ -25,7 +25,8 @@ fs.readdir(filePath, function(err, files){
       }
 
       var newPath = filePath + '/db/mongo_insertion.json';
-      fs.writeFile(newPath, helper.createJSON(filePath + file, data), function(err){
+      var jsonData = helper.createJSON(filePath + file, data);
+      fs.writeFile(newPath, jsonData, function(err){
         if(err){
           console.log("ERROR: ", err);
           return false;
