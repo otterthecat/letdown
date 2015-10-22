@@ -42,7 +42,6 @@ fs.readdir(filePath, function(err, files){
           }
           console.log('insertion complete');
         });
-
       });
     });
   });
