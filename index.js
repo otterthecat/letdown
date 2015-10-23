@@ -41,6 +41,11 @@ fs.readdir(filePath, function(err, files){
             return false;
           }
           console.log('insertion complete');
+          console.log('cleaing up json file');
+          fs.unlink(newPath, function(){
+            console.log('clean up complete.');
+            console.log('Get back to work');
+          });
         });
       });
     });
