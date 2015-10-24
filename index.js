@@ -8,48 +8,59 @@ let helper = require('./lib/helper');
 let filePath = process.env.MD_POSTS_DIR,
     cmdString = `mongoimport --host localhost --db foobar --collection posts < ${filePath}/db/mongo_insertion.json --jsonArray`;
 
+let importToDb = function () {
+  cp.exec(cmdString, function (er) {
+    if (er) {
+      throw new Error ('Failed to import to DB');
+    }
+
+    console.log('insertion complete');
+    console.log('cleaing up json file');
+    fs.unlink(`${filePath}/db/mongo_insertion.json`, function () {
+      console.log('clean up complete.');
+      console.log('Get back to work');
+    });
+  });
+};
+
+let writeDbFile = function (data) {
+  return new Promise(function (resolve, reject) {
+    fs.writeFile(`${filePath}/db/mongo_insertion.json`, data, function (err) {
+      if (err) {
+        reject();
+        throw new Error('Failed to write file');
+      }
+
+      console.log('file created');
+      console.log('inserting into mongo...');
+      resolve();
+    });
+  });
+};
+
+
 fs.readdir(filePath, function (err, files) {
   if (err) {
     console.log('Error: ', err);
     return false;
   }
 
+  // TODO use generator function
   files.forEach(function (file) {
-    fs.readFile(filePath + file, 'utf8', function (err, data) {
-      if (err) {
+    fs.readFile(filePath + file, 'utf8', function (er, data) {
+      if (er) {
         // check if directory (no recursion)
-        if (err.code === 'EISDIR') {
+        if (er.code === 'EISDIR') {
           console.log('file is a directory. Skipping it.');
           return false;
         }
-        console.log('Error: ', err);
+        console.log('Error: ', er);
         return false;
       }
 
-      let newPath = filePath + '/db/mongo_insertion.json';
       let jsonData = helper.createJSON(filePath + file, data);
-      fs.writeFile(newPath, jsonData, function (err) {
-        if (err) {
-          console.log('ERROR: ', err);
-          return false;
-        }
-
-        console.log('file created');
-        console.log('inserting into mongo...');
-
-        cp.exec(cmdString, function (err) {
-          if (err) {
-            console.log('Error inserting into DB: ', err);
-            return false;
-          }
-          console.log('insertion complete');
-          console.log('cleaing up json file');
-          fs.unlink(newPath, function () {
-            console.log('clean up complete.');
-            console.log('Get back to work');
-          });
-        });
-      });
+      writeDbFile(jsonData)
+        .then(importToDb);
     });
   });
 });
