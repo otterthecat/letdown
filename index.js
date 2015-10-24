@@ -1,15 +1,14 @@
 #!/usr/bin/env node
 /* eslint no-console: 0 */
+'use strict';
 let fs = require('fs');
 let cp = require('child_process');
 let helper = require('./lib/helper');
 
 let filePath = process.env.MD_POSTS_DIR,
-    cmdString = `mongoimport --host localhost --db foobar --collection posts < ${filePath} /db/mongo_insertion.json --jsonArray`;
+    cmdString = `mongoimport --host localhost --db foobar --collection posts < ${filePath}/db/mongo_insertion.json --jsonArray`;
 
 fs.readdir(filePath, function (err, files) {
-  'use strict';
-
   if (err) {
     console.log('Error: ', err);
     return false;
