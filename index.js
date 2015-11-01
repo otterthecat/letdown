@@ -41,8 +41,7 @@ let writeDbFile = function (data) {
 
 fs.readdir(filePath, function (err, files) {
   if (err) {
-    console.log('Error: ', err);
-    return false;
+    throw new Error(`Failed reading directory ${filePath}`);
   }
 
   // TODO use generator function
@@ -54,12 +53,10 @@ fs.readdir(filePath, function (err, files) {
           console.log('file is a directory. Skipping it.');
           return false;
         }
-        console.log('Error: ', er);
-        return false;
+        throw new Error('Could not successfully read file ', er);
       }
 
-      let jsonData = helper.createJSON(filePath + file, data);
-      writeDbFile(jsonData)
+      writeDbFile(helper.createJSON(filePath + file, data))
         .then(importToDb);
     });
   });
