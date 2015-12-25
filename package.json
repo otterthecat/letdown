@@ -15,6 +15,7 @@
   "author": "Otter the Cat",
   "license": "MIT",
   "dependencies": {
-    "markdown-it": "^4.4.0"
+    "markdown-it": "^4.4.0",
+    "minimist": "^1.2.0"
   }
 }

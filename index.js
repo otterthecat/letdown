@@ -1,24 +1,32 @@
 #!/usr/bin/env node
 /* eslint no-console: 0 */
 'use strict';
+let args = require('minimist')(process.argv.slice(2));
 let fs = require('fs');
 let cp = require('child_process');
 let helper = require('./lib/helper');
 
 let filePath = process.env.MD_POSTS_DIR,
-    cmdString = `mongoimport --host localhost --db foobar --collection posts < ${filePath}/db/mongo_insertion.json --jsonArray`;
+    cmdString = `mongoimport --host localhost --db foobar -u ${args.u} -p ${args.p} --authenticationDatabase foobar --collection posts < ${filePath} db/mongo_insertion.json --jsonArray`;
+
+let moveToArchive = function(sourcePath){
+  return new Promise(function(resolve, reject){
+    var read = fs.createReadStream(sourcePath);
+    var stamp = new Date().toISOString();
+    var write = fs.createWriteStream(filePath.replace('new', 'archive') + 'post_' + stamp + '.json');
+    read.on('error', reject);
+    write.on('error', reject).on('finish', resolve);
+    read.pipe(write);
+  });
+};
 
 let importToDb = function () {
-  cp.exec(cmdString, function (er) {
-    if (er) {
-      throw new Error ('Failed to import to DB');
-    }
-
-    console.log('insertion complete');
-    console.log('cleaing up json file');
-    fs.unlink(`${filePath}/db/mongo_insertion.json`, function () {
-      console.log('clean up complete.');
-      console.log('Get back to work');
+  return new Promise(function(resolve, reject){
+    cp.exec(cmdString, function (er) {
+      if (er) {
+        reject(er);
+      }
+      resolve(`${filePath}/db/mongo_insertion.json`);
     });
   });
 };
@@ -28,11 +36,7 @@ let writeDbFile = function (data) {
     fs.writeFile(`${filePath}/db/mongo_insertion.json`, data, function (err) {
       if (err) {
         reject();
-        throw new Error('Failed to write file');
       }
-
-      console.log('file created');
-      console.log('inserting into mongo...');
       resolve();
     });
   });
@@ -44,7 +48,6 @@ fs.readdir(filePath, function (err, files) {
     throw new Error(`Failed reading directory ${filePath}`);
   }
 
-  // TODO use generator function
   files.forEach(function (file) {
     fs.readFile(filePath + file, 'utf8', function (er, data) {
       if (er) {
@@ -57,7 +60,8 @@ fs.readdir(filePath, function (err, files) {
       }
 
       writeDbFile(helper.createJSON(filePath + file, data))
-        .then(importToDb);
+        .then(importToDb)
+        .then(moveToArchive)
     });
   });
 });
