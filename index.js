@@ -9,8 +9,8 @@ let helper = require('./lib/helper');
 let filePath = process.env.MD_POSTS_DIR,
     cmdString = helper.crateQueryString(args);
 
-let moveToArchive = function(sourcePath){
-  return new Promise(function(resolve, reject){
+let moveToArchive = function (sourcePath) {
+  return new Promise(function (resolve, reject) {
     var read = fs.createReadStream(sourcePath);
     var stamp = new Date().toISOString();
     var write = fs.createWriteStream(`${filePath.replace('new', 'archive')}_post_${stamp}.json`);
@@ -21,7 +21,7 @@ let moveToArchive = function(sourcePath){
 };
 
 let importToDb = function () {
-  return new Promise(function(resolve, reject){
+  return new Promise(function (resolve, reject) {
     cp.exec(cmdString, function (er) {
       if (er) {
         reject(er);
@@ -61,7 +61,7 @@ fs.readdir(filePath, function (err, files) {
 
       writeDbFile(helper.createJSON(filePath + file, data))
         .then(importToDb)
-        .then(moveToArchive)
+        .then(moveToArchive);
     });
   });
 });
