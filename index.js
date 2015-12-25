@@ -7,13 +7,13 @@ let cp = require('child_process');
 let helper = require('./lib/helper');
 
 let filePath = process.env.MD_POSTS_DIR,
-    cmdString = `mongoimport --host localhost --db foobar -u ${args.u} -p ${args.p} --authenticationDatabase foobar --collection posts < ${filePath} db/mongo_insertion.json --jsonArray`;
+    cmdString = helper.crateQueryString(args);
 
 let moveToArchive = function(sourcePath){
   return new Promise(function(resolve, reject){
     var read = fs.createReadStream(sourcePath);
     var stamp = new Date().toISOString();
-    var write = fs.createWriteStream(filePath.replace('new', 'archive') + 'post_' + stamp + '.json');
+    var write = fs.createWriteStream(`${filePath.replace('new', 'archive')}_post_${stamp}.json`);
     read.on('error', reject);
     write.on('error', reject).on('finish', resolve);
     read.pipe(write);
