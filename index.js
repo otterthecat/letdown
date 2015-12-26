@@ -7,7 +7,20 @@ let cp = require('child_process');
 let helper = require('./lib/helper');
 
 let filePath = process.env.MD_POSTS_DIR,
-    cmdString = helper.crateQueryString(args);
+    cmdString = helper.createQueryString(filePath, args);
+
+let removeFile = function (targetFile) {
+  return new Promise(function (resolve, reject) {
+      fs.unlink(targetFile, function (err) {
+        if (err) {
+          reject(err);
+        }
+        else {
+          resolve()
+        }
+      });
+  });
+};
 
 let moveToArchive = function (sourcePath) {
   return new Promise(function (resolve, reject) {
@@ -15,16 +28,18 @@ let moveToArchive = function (sourcePath) {
     var stamp = new Date().toISOString();
     var write = fs.createWriteStream(`${filePath.replace('new', 'archive')}_post_${stamp}.json`);
     read.on('error', reject);
-    write.on('error', reject).on('finish', resolve);
+    write.on('error', reject).on('finish', function () {
+      resolve(sourcePath);
+    });
     read.pipe(write);
   });
 };
 
 let importToDb = function () {
   return new Promise(function (resolve, reject) {
-    cp.exec(cmdString, function (er) {
-      if (er) {
-        reject(er);
+    cp.exec(cmdString, function (err) {
+      if (err) {
+        reject(err);
       }
       resolve(`${filePath}/db/mongo_insertion.json`);
     });
@@ -33,11 +48,12 @@ let importToDb = function () {
 
 let writeDbFile = function (data) {
   return new Promise(function (resolve, reject) {
-    fs.writeFile(`${filePath}/db/mongo_insertion.json`, data, function (err) {
+    var path = `${filePath}/db/mongo_insertion.json`;
+    fs.writeFile(path, data, function (err) {
       if (err) {
-        reject();
+        reject(err);
       }
-      resolve();
+      resolve(path);
     });
   });
 };
@@ -61,7 +77,11 @@ fs.readdir(filePath, function (err, files) {
 
       writeDbFile(helper.createJSON(filePath + file, data))
         .then(importToDb)
-        .then(moveToArchive);
+        .then(moveToArchive)
+        .then(removeFile)
+        .then(function () {
+          console.log('process complete');
+        });
     });
   });
 });
