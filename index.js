@@ -43,9 +43,9 @@ let moveToArchive = function (sourcePath) {
     read.on('error', reject);
     write.on('error', reject).on('finish', function () {
       resolve({
-        "db": sourcePath,
-        "md": `${filePath}${fileName}.md`,
-        "archive": `${filePath.replace('new', 'archive')}${fileName}_${stamp}.md`
+        'db': sourcePath,
+        'md': `${filePath}${fileName}.md`,
+        'archive': `${filePath.replace('new', 'archive')}${fileName}_${stamp}.md`
       });
     });
     read.pipe(write);
