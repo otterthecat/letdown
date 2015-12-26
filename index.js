@@ -11,14 +11,14 @@ let filePath = process.env.MD_POSTS_DIR,
 
 let removeFile = function (targetFile) {
   return new Promise(function (resolve, reject) {
-      fs.unlink(targetFile, function (err) {
-        if (err) {
-          reject(err);
-        }
-        else {
-          resolve()
-        }
-      });
+    fs.unlink(targetFile, function (err) {
+      if (err) {
+        reject(err);
+      }
+      else {
+        resolve();
+      }
+    });
   });
 };
 
