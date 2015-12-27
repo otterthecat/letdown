@@ -4,9 +4,10 @@
 let args = require('minimist')(process.argv.slice(2));
 let fs = require('fs');
 let cp = require('child_process');
-let helper = require('./lib/helper');
+let query = require('./lib/query');
+let markdownToJSON = require('./lib/markdownToJSON');
 
-let filePath = process.env.MD_POSTS_DIR;
+const FILE_PATH = process.env.MD_POSTS_DIR;
 
 let removeDbFile = function (obj) {
   return new Promise(function (resolve, reject) {
@@ -37,15 +38,15 @@ let removeMdFile = function (obj) {
 let moveToArchive = function (sourcePath) {
   return new Promise(function (resolve, reject) {
     var fileName = sourcePath.substring(sourcePath.lastIndexOf('/') + 1, sourcePath.lastIndexOf('.'));
-    var read = fs.createReadStream(`${filePath}${fileName}.md`);
+    var read = fs.createReadStream(`${FILE_PATH}${fileName}.md`);
     var stamp = new Date().toISOString();
-    var write = fs.createWriteStream(`${filePath.replace('new', 'archive')}${fileName}_${stamp}.md`);
+    var write = fs.createWriteStream(`${FILE_PATH.replace('new', 'archive')}${fileName}_${stamp}.md`);
     read.on('error', reject);
     write.on('error', reject).on('finish', function () {
       resolve({
         "db": sourcePath,
-        "md": `${filePath}${fileName}.md`,
-        "archive": `${filePath.replace('new', 'archive')}${fileName}_${stamp}.md`
+        "md": `${FILE_PATH}${fileName}.md`,
+        "archive": `${FILE_PATH.replace('new', 'archive')}${fileName}_${stamp}.md`
       });
     });
     read.pipe(write);
@@ -54,7 +55,7 @@ let moveToArchive = function (sourcePath) {
 
 let importToDb = function (dataFile) {
   return new Promise(function (resolve, reject) {
-    cp.exec(helper.createQueryString(dataFile, args), function (err) {
+    cp.exec(query(dataFile, args), function (err) {
       if (err) {
         reject(err);
       }
@@ -65,8 +66,8 @@ let importToDb = function (dataFile) {
 
 let writeDbFile = function (file, json) {
   return new Promise(function (resolve, reject) {
-    var data = helper.createJSON(filePath + file, json);
-    var path = `${filePath}/db/${file.substr(0, file.lastIndexOf('.'))}.json`;
+    var data = markdownToJSON(FILE_PATH + file, json);
+    var path = `${FILE_PATH}/db/${file.substr(0, file.lastIndexOf('.'))}.json`;
     fs.writeFile(path, data, function (err) {
       if (err) {
         reject(err);
@@ -77,13 +78,13 @@ let writeDbFile = function (file, json) {
 };
 
 
-fs.readdir(filePath, function (err, files) {
+fs.readdir(FILE_PATH, function (err, files) {
   if (err) {
-    throw new Error(`Failed reading directory ${filePath}`);
+    throw new Error(`Failed reading directory ${FILE_PATH}`);
   }
 
   files.forEach(function (file) {
-    fs.readFile(filePath + file, 'utf8', function (er, data) {
+    fs.readFile(FILE_PATH + file, 'utf8', function (er, data) {
       if (er) {
         // check if directory (no recursion)
         if (er.code === 'EISDIR') {
