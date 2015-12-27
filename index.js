@@ -40,13 +40,13 @@ let moveToArchive = function (sourcePath) {
     var fileName = sourcePath.substring(sourcePath.lastIndexOf('/') + 1, sourcePath.lastIndexOf('.'));
     var read = fs.createReadStream(`${FILE_PATH}${fileName}.md`);
     var stamp = new Date().toISOString();
-    var write = fs.createWriteStream(`${FILE_PATH.replace('new', 'archive')}${fileName}_${stamp}.md`);
+    var write = fs.createWriteStream(`${FILE_PATH}archive/${fileName}_${stamp}.md`);
     read.on('error', reject);
     write.on('error', reject).on('finish', function () {
       resolve({
         "db": sourcePath,
         "md": `${FILE_PATH}${fileName}.md`,
-        "archive": `${FILE_PATH.replace('new', 'archive')}${fileName}_${stamp}.md`
+        "archive": `${FILE_PATH}archive/${fileName}_${stamp}.md`
       });
     });
     read.pipe(write);
@@ -67,7 +67,7 @@ let importToDb = function (dataFile) {
 let writeDbFile = function (file, json) {
   return new Promise(function (resolve, reject) {
     var data = markdownToJSON(FILE_PATH + file, json);
-    var path = `${FILE_PATH}/db/${file.substr(0, file.lastIndexOf('.'))}.json`;
+    var path = `${FILE_PATH}${file.substr(0, file.lastIndexOf('.'))}.json`;
     fs.writeFile(path, data, function (err) {
       if (err) {
         reject(err);
