@@ -6,12 +6,11 @@ let fs = require('fs');
 let cp = require('child_process');
 let query = require('./lib/query');
 let markdownToJSON = require('./lib/markdownToJSON');
-
-const FILE_PATH = process.env.MD_POSTS_DIR;
+let createDetails = require('./lib/createDetails');
 
 let removeDbFile = function (obj) {
   return new Promise(function (resolve, reject) {
-    fs.unlink(obj.db, function (err) {
+    fs.unlink(obj.jsonPath, function (err) {
       if (err) {
         reject(err);
       }
@@ -24,7 +23,7 @@ let removeDbFile = function (obj) {
 
 let removeMdFile = function (obj) {
   return new Promise(function (resolve, reject) {
-    fs.unlink(obj.md, function (err) {
+    fs.unlink(obj.mdPath, function (err) {
       if (err) {
         reject(err);
       }
@@ -35,56 +34,50 @@ let removeMdFile = function (obj) {
   });
 };
 
-let moveToArchive = function (sourcePath) {
+let moveToArchive = function (obj) {
   return new Promise(function (resolve, reject) {
-    var fileName = sourcePath.substring(sourcePath.lastIndexOf('/') + 1, sourcePath.lastIndexOf('.'));
-    var read = fs.createReadStream(`${FILE_PATH}${fileName}.md`);
+    var read = fs.createReadStream(obj.mdPath);
     var stamp = new Date().toISOString();
-    var write = fs.createWriteStream(`${FILE_PATH}archive/${fileName}_${stamp}.md`);
+    var write = fs.createWriteStream(`${obj.archivePath}${obj.fileName}_${stamp}.md`);
     read.on('error', reject);
     write.on('error', reject).on('finish', function () {
-      resolve({
-        "db": sourcePath,
-        "md": `${FILE_PATH}${fileName}.md`,
-        "archive": `${FILE_PATH}archive/${fileName}_${stamp}.md`
-      });
+      resolve(obj);
     });
     read.pipe(write);
   });
 };
 
-let importToDb = function (dataFile) {
+let importToDb = function (obj) {
   return new Promise(function (resolve, reject) {
-    cp.exec(query(dataFile, args), function (err) {
+    cp.exec(query(obj.jsonPath, args), function (err) {
       if (err) {
         reject(err);
       }
-      resolve(dataFile);
+      resolve(obj);
     });
   });
 };
 
-let writeDbFile = function (file, json) {
+let writeDbFile = function (obj) {
   return new Promise(function (resolve, reject) {
-    var data = markdownToJSON(FILE_PATH + file, json);
-    var path = `${FILE_PATH}${file.substr(0, file.lastIndexOf('.'))}.json`;
-    fs.writeFile(path, data, function (err) {
+    obj.data = markdownToJSON(obj.mdPath, obj.data);
+    fs.writeFile(obj.jsonPath, obj.data, function (err) {
       if (err) {
         reject(err);
       }
-      resolve(path);
+      resolve(obj);
     });
   });
 };
 
 
-fs.readdir(FILE_PATH, function (err, files) {
+fs.readdir(createDetails().rootPath, function (err, files) {
   if (err) {
-    throw new Error(`Failed reading directory ${FILE_PATH}`);
+    throw new Error('Failed reading source directory');
   }
 
   files.forEach(function (file) {
-    fs.readFile(FILE_PATH + file, 'utf8', function (er, data) {
+    fs.readFile(createDetails().rootPath + file, 'utf8', function (er, data) {
       if (er) {
         // check if directory (no recursion)
         if (er.code === 'EISDIR') {
@@ -94,7 +87,7 @@ fs.readdir(FILE_PATH, function (err, files) {
         throw new Error('Could not successfully read file ', er);
       }
 
-      writeDbFile(file, data)
+      writeDbFile(createDetails(file, data))
         .then(importToDb)
         .then(moveToArchive)
         .then(removeDbFile)
