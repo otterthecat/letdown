@@ -8,30 +8,19 @@ let query = require('./lib/query');
 let markdownToJSON = require('./lib/markdownToJSON');
 let createDetails = require('./lib/createDetails');
 
-let removeDbFile = function (obj) {
-  return new Promise(function (resolve, reject) {
-    fs.unlink(obj.jsonPath, function (err) {
-      if (err) {
-        reject(err);
-      }
-      else {
-        resolve(obj);
-      }
+let removeFileType = function (type) {
+  return function (obj) {
+    return new Promise(function (resolve, reject) {
+      fs.unlink(obj[`${type}Path`], function (err) {
+        if (err) {
+          reject(err);
+        }
+        else {
+          resolve(obj);
+        }
+      });
     });
-  });
-};
-
-let removeMdFile = function (obj) {
-  return new Promise(function (resolve, reject) {
-    fs.unlink(obj.mdPath, function (err) {
-      if (err) {
-        reject(err);
-      }
-      else {
-        resolve(obj);
-      }
-    });
-  });
+  };
 };
 
 let moveToArchive = function (obj) {
@@ -90,8 +79,8 @@ fs.readdir(createDetails().rootPath, function (err, files) {
       writeDbFile(createDetails(file, data))
         .then(importToDb)
         .then(moveToArchive)
-        .then(removeDbFile)
-        .then(removeMdFile)
+        .then(removeFileType('json'))
+        .then(removeFileType('md'))
         .then(function () {
           console.log('process complete');
         });
