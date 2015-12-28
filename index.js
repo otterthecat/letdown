@@ -8,17 +8,21 @@ let query = require('./lib/query');
 let markdownToJSON = require('./lib/markdownToJSON');
 let createDetails = require('./lib/createDetails');
 
+let completePromise = function (resolve, reject, obj) {
+  return function (err) {
+    if (err) {
+      reject(err);
+    }
+    else {
+      resolve(obj);
+    }
+  }
+};
+
 let removeFileType = function (type) {
   return function (obj) {
     return new Promise(function (resolve, reject) {
-      fs.unlink(obj[`${type}Path`], function (err) {
-        if (err) {
-          reject(err);
-        }
-        else {
-          resolve(obj);
-        }
-      });
+      fs.unlink(obj[`${type}Path`], completePromise(resolve, reject, obj));
     });
   };
 };
@@ -38,24 +42,14 @@ let moveToArchive = function (obj) {
 
 let importToDb = function (obj) {
   return new Promise(function (resolve, reject) {
-    cp.exec(query(obj.jsonPath, args), function (err) {
-      if (err) {
-        reject(err);
-      }
-      resolve(obj);
-    });
+    cp.exec(query(obj.jsonPath, args), completePromise(resolve, reject, obj));
   });
 };
 
 let writeDbFile = function (obj) {
   return new Promise(function (resolve, reject) {
     obj.data = markdownToJSON(obj.mdPath, obj.data);
-    fs.writeFile(obj.jsonPath, obj.data, function (err) {
-      if (err) {
-        reject(err);
-      }
-      resolve(obj);
-    });
+    fs.writeFile(obj.jsonPath, obj.data, completePromise(resolve, reject, obj))
   });
 };
 
