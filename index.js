@@ -7,6 +7,7 @@ let cp = require('child_process');
 let query = require('./lib/query');
 let markdownToJSON = require('./lib/markdownToJSON');
 let createDetails = require('./lib/createDetails');
+let errorHandler = require('./lib/errorhandler');
 
 let completePromise = function (resolve, reject, obj) {
   return function (err) {
@@ -70,14 +71,14 @@ fs.readdir(createDetails().rootPath, function (err, files) {
         throw new Error('Could not successfully read file ', er);
       }
 
-      writeDbFile(createDetails(file, data))
-        .then(importToDb)
-        .then(moveToArchive)
-        .then(removeFileType('json'))
-        .then(removeFileType('md'))
+      writeDbFile(createDetails(file, data), errorHandler)
+        .then(importToDb, errorHandler)
+        .then(moveToArchive, errorHandler)
+        .then(removeFileType('json'), errorHandler)
+        .then(removeFileType('md'), errorHandler)
         .then(function () {
           console.log('process complete');
-        });
+        }, errorHandler);
     });
   });
 });
