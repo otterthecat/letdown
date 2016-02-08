@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 /* eslint no-console: 0 */
 'use strict';
-let args = require('minimist')(process.argv.slice(2));
 let fs = require('fs');
-let cp = require('child_process');
 let markdownToJSON = require('./lib/markdownToJSON');
 let createDetails = require('./lib/createDetails');
 let errorHandler = require('./lib/errorhandler');
