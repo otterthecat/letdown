@@ -4,10 +4,17 @@
 let args = require('minimist')(process.argv.slice(2));
 let fs = require('fs');
 let cp = require('child_process');
-let query = require('./lib/query');
 let markdownToJSON = require('./lib/markdownToJSON');
 let createDetails = require('./lib/createDetails');
+let Mongonaut = require('mongonaut');
 let errorHandler = require('./lib/errorhandler');
+
+let mongonaut = new Mongonaut({
+  'user': args.u,
+  'pwd': args.p,
+  'db': args.d,
+  'collection': args.c
+});
 
 let completePromise = function (resolve, reject, obj) {
   return function (err) {
@@ -20,8 +27,8 @@ let completePromise = function (resolve, reject, obj) {
   }
 };
 
-let removeFileType = function (type) {
-  return function (obj) {
+let removeFileType = function (type, obj) {
+  return function () {
     return new Promise(function (resolve, reject) {
       fs.unlink(obj[`${type}Path`], completePromise(resolve, reject, obj));
     });
@@ -41,10 +48,12 @@ let moveToArchive = function (obj) {
   });
 };
 
+let isMarkdown = function (file) {
+  return file.substr(file.lastIndexOf('.') + 1) === 'md';
+};
+
 let importToDb = function (obj) {
-  return new Promise(function (resolve, reject) {
-    cp.exec(query(obj.jsonPath, args), completePromise(resolve, reject, obj));
-  });
+  return mongonaut.import(obj.jsonPath);
 };
 
 let writeDbFile = function (obj) {
@@ -54,28 +63,19 @@ let writeDbFile = function (obj) {
   });
 };
 
-
 fs.readdir(createDetails().rootPath, function (err, files) {
   if (err) {
     throw new Error('Failed reading source directory');
   }
 
-  files.forEach(function (file) {
-    fs.readFile(createDetails().rootPath + file, 'utf8', function (er, data) {
-      if (er) {
-        // check if directory (no recursion)
-        if (er.code === 'EISDIR') {
-          // found a directory. skip it.
-          return false;
-        }
-        throw new Error('Could not successfully read file ', er);
-      }
-
-      writeDbFile(createDetails(file, data), errorHandler)
+  files.filter(isMarkdown).forEach(function (file) {
+    fs.readFile(createDetails().rootPath + file, 'utf8', function (er, data){
+      let details = createDetails(file, data);
+      writeDbFile(details, errorHandler)
         .then(importToDb, errorHandler)
-        .then(moveToArchive, errorHandler)
-        .then(removeFileType('json'), errorHandler)
-        .then(removeFileType('md'), errorHandler)
+        .then(moveToArchive(details), errorHandler)
+        .then(removeFileType('json', details), errorHandler)
+        .then(removeFileType('md', details), errorHandler)
         .then(function () {
           console.log('process complete');
         }, errorHandler);
