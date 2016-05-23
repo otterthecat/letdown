@@ -27,8 +27,8 @@ let completePromise = function (resolve, reject, obj) {
   }
 };
 
-let removeFileType = function (type, obj) {
-  return function () {
+let removeFileType = function (type) {
+  return function (obj) {
     return new Promise(function (resolve, reject) {
       fs.unlink(obj[`${type}Path`], completePromise(resolve, reject, obj));
     });
@@ -37,12 +37,13 @@ let removeFileType = function (type, obj) {
 
 let moveToArchive = function (obj) {
   return new Promise(function (resolve, reject) {
-    var read = fs.createReadStream(obj.mdPath);
-    var stamp = new Date().toISOString();
-    var write = fs.createWriteStream(`${obj.archivePath}${obj.fileName}_${stamp}.md`);
+    let details = createDetails(obj[0].file);
+    let read = fs.createReadStream(details.mdPath);
+    let stamp = new Date().toISOString();
+    let write = fs.createWriteStream(`${details.archivePath}${details.fileName}_${stamp}.md`);
     read.on('error', reject);
     write.on('error', reject).on('finish', function () {
-      resolve(obj);
+      resolve(details);
     });
     read.pipe(write);
   });
@@ -70,12 +71,11 @@ fs.readdir(createDetails().rootPath, function (err, files) {
 
   files.filter(isMarkdown).forEach(function (file) {
     fs.readFile(createDetails().rootPath + file, 'utf8', function (er, data){
-      let details = createDetails(file, data);
-      writeDbFile(details, errorHandler)
+      writeDbFile(createDetails(file, data), errorHandler)
         .then(importToDb, errorHandler)
-        .then(moveToArchive(details), errorHandler)
-        .then(removeFileType('json', details), errorHandler)
-        .then(removeFileType('md', details), errorHandler)
+        .then(moveToArchive, errorHandler)
+        .then(removeFileType('json'), errorHandler)
+        .then(removeFileType('md'), errorHandler)
         .then(function () {
           console.log('process complete');
         }, errorHandler);
